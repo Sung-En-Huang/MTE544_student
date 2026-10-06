@@ -36,8 +36,13 @@ class motion_executioner(Node):
         super().__init__("motion_types")
         
         self.type=motion_type
-        
-        self.radius_=0.0
+
+        # Changed the init radius
+        self.radius_= 0.1
+        self.radius_growth_rate = 0.01 # assume units of meters/s
+        self.radius_spiral_max = 1.0
+        self.radius_spiral_min = 0.1
+        self.spiral_growth_direction = 1  # +1 grows; -1 shrinks
         
         self.successful_init=False
         self.imu_initialized=False
@@ -50,8 +55,8 @@ class motion_executioner(Node):
         # loggers
         self.imu_logger=Logger('imu_content_'+str(motion_types[motion_type])+'.csv', headers=["acc_x", "acc_y", "angular_z", "stamp"])
         self.odom_logger=Logger('odom_content_'+str(motion_types[motion_type])+'.csv', headers=["x","y","th", "stamp"])
-        self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
-        
+        # SEH self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
+        self.laser_logger=None # Set as none temporarily to check how many scan ranges there are for laser scan
         # TODO Part 3: Create the QoS profile by setting the proper parameters in (...)
         # QoS for Turtlebot3 Simulation
         qos=QoSProfile(
@@ -105,11 +110,22 @@ class motion_executioner(Node):
         ... # log odom msgs
                 
     def laser_callback(self, laser_msg: LaserScan):
-        values = [
-            list(laser_msg.ranges),
+        if self.laser_logger is None:
+            headers = [
+                f"range_{i}" for i in range(len(laser_msg.ranges))
+            ]
+            headers += ["angle_increment", "stamp"]
+
+            self.laser_logger = Logger(
+                'laser_content_' + motion_types[self.type] + '.csv',
+                headers=headers
+            )
+
+        values = list(laser_msg.ranges) + [
             laser_msg.angle_increment,
             Time.from_msg(laser_msg.header.stamp).nanoseconds
         ]
+
         self.laser_logger.log_values(values)
         self.laser_initialized = True
         ... # log laser msgs with position msg at that time
@@ -145,12 +161,27 @@ class motion_executioner(Node):
     def make_circular_twist(self):
         
         msg=Twist()
-        ... # fill up the twist msg for circular motion
+        # speed values need to be tuned in the lab
+        msg.linear.x = 0.1 
+        msg.angular.z = 0.5 
+        # fill up the twist msg for circular motion
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for spiral motion
+        msg.linear.x = 0.1
+
+        self.radius_ += (self.spiral_growth_direction * self.radius_growth_rate * 0.1)
+        
+        if (self.radius_ >=  self.radius_spiral_max):
+            self.radius_ = self.radius_spiral_max
+            self.spiral_growth_direction = -1
+        elif (self.radius_ <= self.radius_spiral_min):
+            self.radius_ = self.radius_spiral_min
+            self.spiral_growth_direction = 1
+            
+        msg.angular.z = msg.linear.x / self.radius_  # Adjust angular velocity based on linear velocity to create a spiral effect
+        # fill up the twist msg for spiral motion
         return msg
     
     def make_acc_line_twist(self):

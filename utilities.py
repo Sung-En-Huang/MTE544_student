@@ -1,4 +1,5 @@
 from math import atan2, asin, sqrt
+import csv 
 
 M_PI=3.1415926535
 
@@ -24,10 +25,13 @@ class Logger:
             vals_str=""
 
             # TODO Part 5: Write the values from the list to the file
-            ...
-            
-            vals_str+="\n"
-            
+            for i, val in enumerate(values_list):
+                vals_str+=str(val)
+                # Only append a comma if it's not the last value in the list
+                if i < len(values_list) - 1:
+                    vals_str+=", "
+                    
+            vals_str+="\n"     
             file.write(vals_str)
             
 
