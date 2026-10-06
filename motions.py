@@ -4,16 +4,21 @@ import rclpy
 from rclpy.node import Node
 
 from utilities import Logger, euler_from_quaternion
-from rclpy.qos import QoSProfile
+from rclpy.qos import (
+    QoSProfile,
+    HistoryPolicy,
+    ReliabilityPolicy,
+    DurabilityPolicy,
+)
 
 # TODO Part 3: Import message types needed: 
     # For sending velocity commands to the robot: Twist
     # For the sensors: Imu, LaserScan, and Odometry
 # Check the online documentation to fill in the lines below
-from ... import Twist
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
-from ... import LaserScan
-from ... import Odometry
+from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
 
 from rclpy.time import Time
 
@@ -40,28 +45,31 @@ class motion_executioner(Node):
         self.laser_initialized=False
         
         # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...)
-        self.vel_publisher=self.create_publisher(...)
-                
+        self.vel_publisher=self.create_publisher(Twist, 'cmd_vel', 10)
+
         # loggers
         self.imu_logger=Logger('imu_content_'+str(motion_types[motion_type])+'.csv', headers=["acc_x", "acc_y", "angular_z", "stamp"])
         self.odom_logger=Logger('odom_content_'+str(motion_types[motion_type])+'.csv', headers=["x","y","th", "stamp"])
         self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
         
         # TODO Part 3: Create the QoS profile by setting the proper parameters in (...)
-        qos=QoSProfile(...)
+        # QoS for Turtlebot3 Simulation
+        qos=QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,  # Retained sample count
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE
+        )
 
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
         # IMU subscription
-        
-        ...
-        
-        # ENCODER subscription
+        self.imu_subscription = self.create_subscription(Imu, '/imu', self.imu_callback, qos)
 
-        ...
+        # ENCODER subscription
+        self.odom_subscription = self.create_subscription(Odometry, '/odom', self.odom_callback, qos)
         
         # LaserScan subscription 
-        
-        ...
+        self.laser_subscription = self.create_subscription(LaserScan, '/scan', self.laser_callback, qos)
         
         self.create_timer(0.1, self.timer_callback)
 
@@ -73,14 +81,37 @@ class motion_executioner(Node):
     # You can save the needed fields into a list, and pass the list to the log_values function in utilities.py
 
     def imu_callback(self, imu_msg: Imu):
-        ...    # log imu msgs
-        
+        values = [
+            imu_msg.linear_acceleration.x,
+            imu_msg.linear_acceleration.y,
+            imu_msg.angular_velocity.z,
+            Time.from_msg(imu_msg.header.stamp).nanoseconds
+        ]
+        self.imu_logger.log_values(values)
+        self.imu_initialized = True
+        # log imu msgs
+
     def odom_callback(self, odom_msg: Odometry):
-        
+        q = odom_msg.pose.pose.orientation
+        theta = euler_from_quaternion([q.x, q.y, q.z, q.w])
+        values = [ 
+            odom_msg.pose.pose.position.x,
+            odom_msg.pose.pose.position.y,
+            theta,
+            Time.from_msg(odom_msg.header.stamp).nanoseconds
+        ]
+        self.odom_logger.log_values(values)
+        self.odom_initialized = True
         ... # log odom msgs
                 
     def laser_callback(self, laser_msg: LaserScan):
-        
+        values = [
+            list(laser_msg.ranges),
+            laser_msg.angle_increment,
+            Time.from_msg(laser_msg.header.stamp).nanoseconds
+        ]
+        self.laser_logger.log_values(values)
+        self.laser_initialized = True
         ... # log laser msgs with position msg at that time
                 
     def timer_callback(self):
