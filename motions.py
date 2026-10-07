@@ -43,6 +43,10 @@ class motion_executioner(Node):
         self.radius_spiral_max = 1.0
         self.radius_spiral_min = 0.1
         self.spiral_growth_direction = 1  # +1 grows; -1 shrinks
+
+        self.line_speed = 0.0       # m/s
+        self.line_acceleration = 0.02  # m/s²
+        self.line_max_speed = 0.1   # m/s
         
         self.successful_init=False
         self.imu_initialized=False
@@ -107,7 +111,7 @@ class motion_executioner(Node):
         ]
         self.odom_logger.log_values(values)
         self.odom_initialized = True
-        ... # log odom msgs
+        # log odom msgs
                 
     def laser_callback(self, laser_msg: LaserScan):
         if self.laser_logger is None:
@@ -128,7 +132,7 @@ class motion_executioner(Node):
 
         self.laser_logger.log_values(values)
         self.laser_initialized = True
-        ... # log laser msgs with position msg at that time
+        # log laser msgs with position msg at that time
                 
     def timer_callback(self):
         
@@ -179,14 +183,21 @@ class motion_executioner(Node):
         elif (self.radius_ <= self.radius_spiral_min):
             self.radius_ = self.radius_spiral_min
             self.spiral_growth_direction = 1
-            
+
         msg.angular.z = msg.linear.x / self.radius_  # Adjust angular velocity based on linear velocity to create a spiral effect
         # fill up the twist msg for spiral motion
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for line motion
+
+        self.line_speed += self.line_acceleration * 0.1
+        self.line_speed = min(self.line_speed, self.line_max_speed)
+
+        msg.linear.x = self.line_speed
+        msg.angular.z = 0.0
+        # fill up the twist msg for line motion
+
         return msg
 
 import argparse

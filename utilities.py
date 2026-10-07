@@ -30,7 +30,7 @@ class Logger:
                 # Only append a comma if it's not the last value in the list
                 if i < len(values_list) - 1:
                     vals_str+=", "
-                    
+
             vals_str+="\n"     
             file.write(vals_str)
             
@@ -65,7 +65,7 @@ class FileReader:
                     read_headers=True
                     break
             
-            next(file)
+            # next(file)
             
             # Read each line and extract values
             for line in file:
