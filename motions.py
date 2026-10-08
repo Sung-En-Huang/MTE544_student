@@ -226,7 +226,7 @@ if __name__=="__main__":
         ME=motion_executioner(motion_type=SPIRAL)
 
     else:
-        print(f"we don't have {arg.motion.lower()} motion type")
+        print(f"we don't have {args.motion.lower()} motion type")
 
 
     
