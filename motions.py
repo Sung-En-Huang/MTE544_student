@@ -63,6 +63,7 @@ class motion_executioner(Node):
         self.laser_logger=None # Set as none temporarily to check how many scan ranges there are for laser scan
         # TODO Part 3: Create the QoS profile by setting the proper parameters in (...)
         # QoS for Turtlebot3 Simulation
+        # Lab TODO Recheck /imu, /odom, /scan publisher QoS on TurtleBot4
         qos=QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
             depth=10,  # Retained sample count
@@ -118,7 +119,7 @@ class motion_executioner(Node):
             headers = [
                 f"range_{i}" for i in range(len(laser_msg.ranges))
             ]
-            headers += ["angle_increment", "stamp"]
+            headers += ["angle_min", "angle_increment", "stamp"]
 
             self.laser_logger = Logger(
                 'laser_content_' + motion_types[self.type] + '.csv',
@@ -126,6 +127,7 @@ class motion_executioner(Node):
             )
 
         values = list(laser_msg.ranges) + [
+            laser_msg.angle_min,
             laser_msg.angle_increment,
             Time.from_msg(laser_msg.header.stamp).nanoseconds
         ]
@@ -166,6 +168,7 @@ class motion_executioner(Node):
         
         msg=Twist()
         # speed values need to be tuned in the lab
+        # tune forward speed (m/s) and turn speed (rad/s); radius = abs(v / omega)
         msg.linear.x = 0.1 
         msg.angular.z = 0.5 
         # fill up the twist msg for circular motion
@@ -173,6 +176,7 @@ class motion_executioner(Node):
 
     def make_spiral_twist(self):
         msg=Twist()
+        # Tune initial/min/max turning radius (m) and growth rate (m/s)
         msg.linear.x = 0.1
 
         self.radius_ += (self.spiral_growth_direction * self.radius_growth_rate * 0.1)
@@ -190,7 +194,7 @@ class motion_executioner(Node):
     
     def make_acc_line_twist(self):
         msg=Twist()
-
+        # Tune acceleration and speed cap
         self.line_speed += self.line_acceleration * 0.1
         self.line_speed = min(self.line_speed, self.line_max_speed)
 
