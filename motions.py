@@ -40,13 +40,13 @@ class motion_executioner(Node):
         # Changed the init radius
         self.radius_= 0.1
         self.radius_growth_rate = 0.01 # assume units of meters/s
-        self.radius_spiral_max = 1.0
+        self.radius_spiral_max = 0.5
         self.radius_spiral_min = 0.1
         self.spiral_growth_direction = 1  # +1 grows; -1 shrinks
 
-        self.line_speed = 0.0       # m/s
+        self.line_speed = 0.2       # m/s
         self.line_acceleration = 0.02  # m/s²
-        self.line_max_speed = 0.1   # m/s
+        self.line_max_speed = 0.5   # m/s
         
         self.successful_init=False
         self.imu_initialized=False
@@ -67,7 +67,7 @@ class motion_executioner(Node):
         qos=QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
             depth=10,  # Retained sample count
-            reliability=ReliabilityPolicy.RELIABLE,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE
         )
 
@@ -169,7 +169,7 @@ class motion_executioner(Node):
         msg=Twist()
         # speed values need to be tuned in the lab
         # tune forward speed (m/s) and turn speed (rad/s); radius = abs(v / omega)
-        msg.linear.x = 0.1 
+        msg.linear.x = 0.3 
         msg.angular.z = 0.5 
         # fill up the twist msg for circular motion
         return msg
@@ -177,16 +177,19 @@ class motion_executioner(Node):
     def make_spiral_twist(self):
         msg=Twist()
         # Tune initial/min/max turning radius (m) and growth rate (m/s)
-        msg.linear.x = 0.1
+        msg.linear.x = 0.5
 
-        self.radius_ += (self.spiral_growth_direction * self.radius_growth_rate * 0.1)
-        
+        self.radius_ += (self.spiral_growth_direction * self.radius_growth_rate * 0.2)
+
         if (self.radius_ >=  self.radius_spiral_max):
-            self.radius_ = self.radius_spiral_max
-            self.spiral_growth_direction = -1
-        elif (self.radius_ <= self.radius_spiral_min):
-            self.radius_ = self.radius_spiral_min
-            self.spiral_growth_direction = 1
+                    self.radius_ = self.radius_spiral_max
+        
+        # if (self.radius_ >=  self.radius_spiral_max):
+        #     self.radius_ = self.radius_spiral_max
+        #     self.spiral_growth_direction = -1
+        # elif (self.radius_ <= self.radius_spiral_min):
+        #     self.radius_ = self.radius_spiral_min
+        #     self.spiral_growth_direction = 1
 
         msg.angular.z = msg.linear.x / self.radius_  # Adjust angular velocity based on linear velocity to create a spiral effect
         # fill up the twist msg for spiral motion
