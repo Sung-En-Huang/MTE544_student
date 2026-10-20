@@ -107,7 +107,7 @@ class motion_executioner(Node):
         values = [ 
             odom_msg.pose.pose.position.x,
             odom_msg.pose.pose.position.y,
-            theta,
+            theta, # save yaw as theta
             Time.from_msg(odom_msg.header.stamp).nanoseconds
         ]
         self.odom_logger.log_values(values)
