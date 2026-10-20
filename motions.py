@@ -37,7 +37,7 @@ class motion_executioner(Node):
         
         self.type=motion_type
 
-        # Changed the init radius
+        # Configure the spiral radius limits and the line speed ramp.
         self.radius_= 0.1
         self.radius_growth_rate = 0.01 # assume units of meters/s
         self.radius_spiral_max = 0.5
@@ -54,6 +54,7 @@ class motion_executioner(Node):
         self.laser_initialized=False
         
         # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...)
+        # publish velocity commands to cmd_vel
         self.vel_publisher=self.create_publisher(Twist, 'cmd_vel', 10)
 
         # loggers
@@ -66,8 +67,8 @@ class motion_executioner(Node):
         # Lab TODO Recheck /imu, /odom, /scan publisher QoS on TurtleBot4
         qos=QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
-            depth=10,  # Retained sample count
-            reliability=ReliabilityPolicy.BEST_EFFORT,
+            depth=10,  # Retained sample count, keep the latest 10 sensor messages using best-effort delivery
+            reliability=ReliabilityPolicy.BEST_EFFORT, # based on the Turtlebot4
             durability=DurabilityPolicy.VOLATILE
         )
 
@@ -81,6 +82,7 @@ class motion_executioner(Node):
         # LaserScan subscription 
         self.laser_subscription = self.create_subscription(LaserScan, '/scan', self.laser_callback, qos)
         
+        # update the motion command every 0.1 seconds
         self.create_timer(0.1, self.timer_callback)
 
 
@@ -91,17 +93,19 @@ class motion_executioner(Node):
     # You can save the needed fields into a list, and pass the list to the log_values function in utilities.py
 
     def imu_callback(self, imu_msg: Imu):
+        # log sensor-frame x/y acceleration (m/s^2), z angular velocity (rad/s), and time (ns)
         values = [
             imu_msg.linear_acceleration.x,
             imu_msg.linear_acceleration.y,
             imu_msg.angular_velocity.z,
-            Time.from_msg(imu_msg.header.stamp).nanoseconds
+            Time.from_msg(imu_msg.header.stamp).nanoseconds # timestamp
         ]
-        self.imu_logger.log_values(values)
+        self.imu_logger.log_values(values) # log imu data
         self.imu_initialized = True
         # log imu msgs
 
     def odom_callback(self, odom_msg: Odometry):
+        # convert quaternion orientation to yaw and log planar position with time
         q = odom_msg.pose.pose.orientation
         theta = euler_from_quaternion([q.x, q.y, q.z, q.w])
         values = [ 
@@ -110,17 +114,19 @@ class motion_executioner(Node):
             theta, # save yaw as theta
             Time.from_msg(odom_msg.header.stamp).nanoseconds
         ]
-        self.odom_logger.log_values(values)
+        self.odom_logger.log_values(values) # log odom data
         self.odom_initialized = True
         # log odom msgs
                 
     def laser_callback(self, laser_msg: LaserScan):
+        # create one range column per beam when the first scan arrives
         if self.laser_logger is None:
             headers = [
                 f"range_{i}" for i in range(len(laser_msg.ranges))
             ]
             headers += ["angle_min", "angle_increment", "stamp"]
-
+            
+             # log laser data
             self.laser_logger = Logger(
                 'laser_content_' + motion_types[self.type] + '.csv',
                 headers=headers
@@ -138,6 +144,7 @@ class motion_executioner(Node):
                 
     def timer_callback(self):
         
+        # wait for a message from every sensor before commanding motion
         if self.odom_initialized and self.laser_initialized and self.imu_initialized:
             self.successful_init=True
             
@@ -169,6 +176,7 @@ class motion_executioner(Node):
         msg=Twist()
         # speed values need to be tuned in the lab
         # tune forward speed (m/s) and turn speed (rad/s); radius = abs(v / omega)
+        # constant forward and yaw speeds produce a CCW circle with radius v / omega
         msg.linear.x = 0.3 
         msg.angular.z = 0.5 
         # fill up the twist msg for circular motion
@@ -179,6 +187,7 @@ class motion_executioner(Node):
         # Tune initial/min/max turning radius (m) and growth rate (m/s)
         msg.linear.x = 0.5
 
+        # increase the turning radius by 0.002 m per update, capped at the maximum
         self.radius_ += (self.spiral_growth_direction * self.radius_growth_rate * 0.2)
 
         if (self.radius_ >=  self.radius_spiral_max):
@@ -191,6 +200,7 @@ class motion_executioner(Node):
         #     self.radius_ = self.radius_spiral_min
         #     self.spiral_growth_direction = 1
 
+        # use omega = v / R; turning slows as the radius grows
         msg.angular.z = msg.linear.x / self.radius_  # Adjust angular velocity based on linear velocity to create a spiral effect
         # fill up the twist msg for spiral motion
         return msg
@@ -198,6 +208,7 @@ class motion_executioner(Node):
     def make_acc_line_twist(self):
         msg=Twist()
         # Tune acceleration and speed cap
+        # increase forward speed by a * dt, up to the speed limit
         self.line_speed += self.line_acceleration * 0.1
         self.line_speed = min(self.line_speed, self.line_max_speed)
 

@@ -84,6 +84,7 @@ class FileReader:
 
 
 # TODO Part 5: Implement the conversion from Quaternion to Euler Angles
+# this function returns only yaw in radians, using quaternion order [x, y, z, w]
 def euler_from_quaternion(quat):
     """
     Convert quaternion (w in last place) to euler roll, pitch, yaw.
