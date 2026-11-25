@@ -64,15 +64,15 @@ def search(maze, start, end):
 
     # TODO PART 4 Create start and end node with initized values for g, h and f
     # Use None as parent if not defined
-    start_node = Node(...)
-    start_node.g = ...     # cost from start Node
-    start_node.h = ...     # heuristic estimated cost to end Node
-    start_node.f = ...
+    start_node = Node(parent=None, position=tuple(start))
+    start_node.g = 0     # cost from start Node is 0 since this is the first node
+    start_node.h = heursitic(start, end)     # heuristic estimated cost to end Node, heuristic function to implement manhattan and euclidean distance
+    start_node.f = start_node.g + start_node.h # f = g + h
 
-    end_node = Node(...)
-    end_node.g = ...       # set a large value if not defined
-    end_node.h = ...       # heuristic estimated cost to end Node
-    end_node.f = ...
+    end_node = Node(parent=None, position=tuple(end))
+    end_node.g = float("inf")       # set a large value if not defined
+    end_node.h = 0       # heuristic estimated cost to end Node is 0 since we are already at the end node
+    end_node.f = end_node.g + end_node.h
 
     # Initialize both yet_to_visit and visited dictionary
     # in this dict we will put all node that are yet_to_visit for exploration.
@@ -92,14 +92,14 @@ def search(maze, start, end):
 
     # TODO PART 4 what squares do we search . serarch movement is left-right-top-bottom
     # (4 or 8 movements) from every positon
-    move = [[...],  # go up
-            [...],  # go left
-            [...],  # go down
-            [...],  # go right
-            [...],  # go up left
-            [...],  # go down left
-            [...],  # go up right
-            [...]]  # go down right
+    move = [[0, -1],  # go up
+            [-1, 0],  # go left
+            [0, 1],  # go down
+            [1, 0],  # go right
+            [-1, -1],  # go up left
+            [-1, 1],  # go down left
+            [1, -1],  # go up right
+            [1, 1]]  # go down right
 
     """
         1) We first get the current node by comparing all f cost and selecting the lowest cost node for further expansion
@@ -119,7 +119,7 @@ def search(maze, start, end):
                 d) else move the child to yet_to_visit dict
     """
     # TODO PART 4 find maze has got how many rows and columns
-    no_rows, no_columns = ...
+    no_columns, no_rows = maze.shape
 
     # Loop until you find the end
 
