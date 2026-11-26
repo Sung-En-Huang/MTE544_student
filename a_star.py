@@ -46,6 +46,21 @@ def return_path(current_node, maze):
 
     return path
 
+# to change heursitic, change method to either "manhattan" or "euclidean"
+def heuristic(position, goal, method = "manhattan"):
+    # position is col, row (x, y)
+    x, y = position
+    x_goal, y_goal = goal
+    dx = abs(x_goal - x)
+    dy = abs(y_goal - y)
+
+    if method == "manhattan":
+        return dx + dy
+    elif method == "euclidean":
+        return sqrt(dx**2 + dy**2)
+    raise ValueError(f"unknown heursitic: {method}") 
+
+
 
 def search(maze, start, end):
 
@@ -66,7 +81,7 @@ def search(maze, start, end):
     # Use None as parent if not defined
     start_node = Node(parent=None, position=tuple(start))
     start_node.g = 0     # cost from start Node is 0 since this is the first node
-    start_node.h = heursitic(start, end)     # heuristic estimated cost to end Node, heuristic function to implement manhattan and euclidean distance
+    start_node.h = heuristic(start, end)     # heuristic estimated cost to end Node, heuristic function to implement manhattan and euclidean distance
     start_node.f = start_node.g + start_node.h # f = g + h
 
     end_node = Node(parent=None, position=tuple(end))
@@ -96,10 +111,13 @@ def search(maze, start, end):
             [-1, 0],  # go left
             [0, 1],  # go down
             [1, 0],  # go right
-            [-1, -1],  # go up left
-            [-1, 1],  # go down left
-            [1, -1],  # go up right
-            [1, 1]]  # go down right
+            ]  
+            # add back if need 8 movements 
+            #[-1, -1],  # go up left
+            #[-1, 1],  # go down left
+            #[1, -1],  # go up right
+            #[1, 1]  # go down right
+            
 
     """
         1) We first get the current node by comparing all f cost and selecting the lowest cost node for further expansion
@@ -157,10 +175,13 @@ def search(maze, start, end):
         for new_position in move:
 
             # TODO PART 4 Get node position
-            node_position = (...)
+            column, row = current_node.position 
+            delta_column, delta_row = new_position
+            node_position = (column + delta_column, row + delta_row)
+            neighbor_column, neighbor_row = node_position
 
             # TODO PART 4 Make sure within range (check if within maze boundary)
-            if (...):
+            if not(0 <= neighbor_column < no_columns) or not(0 <= neighbor_row < no_rows):
                 continue
 
             # Make sure walkable terrain
@@ -178,13 +199,13 @@ def search(maze, start, end):
         for child in children:
 
             # TODO PART 4 Child is on the visited dict (use get method to check if child is in visited dict, if not found then default value is False)
-            if ():
+            if visited_dict.get(child.position, False):
                 continue
 
             # TODO PART 4 Create the f, g, and h values
-            child.g = ...
+            child.g = current_node.g + 1 # move cost is 1 since only horizontal and vertical moves are allowed at the moment
             # Heuristic costs calculated here, this is using eucledian distance
-            child.h = ...
+            child.h = heuristic(child.position, end)
 
             child.f = child.g + child.h
 
