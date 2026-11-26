@@ -51,15 +51,19 @@ def return_path(current_node, maze):
 def heuristic(position, goal, method = "manhattan"):
     # position is col, row (x, y)
     x, y = position
+    # store the x and y of goal position
     x_goal, y_goal = goal
+    # caclulate the absolute delta between the goal and current position
     dx = abs(x_goal - x)
     dy = abs(y_goal - y)
 
+    # implement manhattan and euclidean distance heuristics, if method is not recognized, raise a ValueError
     if method == "manhattan":
         return dx + dy
     elif method == "euclidean":
         return sqrt(dx**2 + dy**2)
-    raise ValueError(f"unknown heursitic: {method}") 
+    # raise error if the selected heuristic method is not recognized
+    raise ValueError(f"unknown heuristic: {method}") 
 
 
 
@@ -86,6 +90,7 @@ def search(maze, start, end):
 
     # TODO PART 4 Create start and end node with initized values for g, h and f
     # Use None as parent if not defined
+    # create start node which has no parents since it's the root of the search, store it's position as a tuple
     start_node = Node(parent=None, position=tuple(start))
     start_node.g = 0     # cost from start Node is 0 since this is the first node
     start_node.h = heuristic(start, end)     # heuristic estimated cost to end Node, heuristic function to implement manhattan and euclidean distance
@@ -94,7 +99,7 @@ def search(maze, start, end):
     end_node = Node(parent=None, position=tuple(end))
     end_node.g = float("inf")       # set a large value if not defined
     end_node.h = 0       # heuristic estimated cost to end Node is 0 since we are already at the end node
-    end_node.f = end_node.g + end_node.h
+    end_node.f = end_node.g + end_node.h # f = g + h
 
     # Initialize both yet_to_visit and visited dictionary
     # in this dict we will put all node that are yet_to_visit for exploration.
@@ -182,12 +187,14 @@ def search(maze, start, end):
         for new_position in move:
 
             # TODO PART 4 Get node position
+            # store the current node position as column and row
             column, row = current_node.position 
-            delta_column, delta_row = new_position
-            node_position = (column + delta_column, row + delta_row)
-            neighbor_column, neighbor_row = node_position
+            delta_column, delta_row = new_position # extract col, row delta from the move list 
+            node_position = (column + delta_column, row + delta_row) # calculate the neightbor node position by adding the delta to the current node position
+            neighbor_column, neighbor_row = node_position # store the neighbor node position as column and row for later use
 
             # TODO PART 4 Make sure within range (check if within maze boundary)
+            # skip if negative or outside maze boundary 
             if not(0 <= neighbor_column < no_columns) or not(0 <= neighbor_row < no_rows):
                 continue
 
@@ -206,6 +213,7 @@ def search(maze, start, end):
         for child in children:
 
             # TODO PART 4 Child is on the visited dict (use get method to check if child is in visited dict, if not found then default value is False)
+            # skip child nodes that A* has explored
             if visited_dict.get(child.position, False):
                 continue
 
@@ -218,6 +226,7 @@ def search(maze, start, end):
             cell_cost = maze[child.position[0], child.position[1]]
 
             # total cost of reaching the next cell along this route, product of the cost_weight and the cell_cost is added to the g cost to penalize paths that are near obstacles more heavily so that clear paths are more preferred
+            # use if obstacle proximity penalty is desired
             child.g = current_node.g + 1 + cost_weight * cell_cost
 
             # child.g = current_node.g + 1 # move cost is 1 since only horizontal and vertical moves are allowed at the moment
@@ -225,6 +234,7 @@ def search(maze, start, end):
             # heuristic costs calculated here, this is using the method selected in herustic function
             child.h = heuristic(child.position, end)
 
+            # f = g + h
             child.f = child.g + child.h
 
             # Child is already in the yet_to_visit list and g cost is already lower
