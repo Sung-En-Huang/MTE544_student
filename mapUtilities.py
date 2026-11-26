@@ -16,7 +16,7 @@ from utilities import *
 class mapManipulator(Node):
 
 
-    def __init__(self, filename_: str = "room.yaml", laser_sig=0.01):
+    def __init__(self, filename_: str = "room.yaml", laser_sig=0.01): # SEH originally laser_sig=0.01
         
         
         super().__init__('likelihood_field')
@@ -171,7 +171,7 @@ class mapManipulator(Node):
         occupied_points = [self.cell_2_position([i, j]) for i, j in zip(indices[0], indices[1])]
         all_positions = [self.cell_2_position([i, j]) for i in range(image_array.shape[0]) for j in range(image_array.shape[1])]
 
-        kdt=KDTree(occupied_points)
+        kdt = KDTree(np.asarray(occupied_points, dtype=float))
 
         dists=kdt.query(all_positions, k=1)[0][:]
         probabilities=np.exp( -(dists**2) / (2*self.laser_sig**2))

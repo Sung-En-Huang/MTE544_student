@@ -31,7 +31,7 @@ class planner:
         # TODO PART 5 Create the cost-map, the laser_sig is 
         # the standard deviation for the gausiian for which
         # the mean is located on the occupant grid. 
-        self.m_utilites=mapManipulator(filename_=self.mapName, laser_sig=0.01) 
+        self.m_utilites=mapManipulator(filename_=self.mapName, laser_sig=0.3) # SEH originally laser_sig=0.01, changed to 0.35 to account for the robot size (essentially inflating the objects in the map)
             
         self.costMap=self.m_utilites.make_likelihood_field()
         

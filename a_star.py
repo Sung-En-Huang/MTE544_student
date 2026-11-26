@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from math import sqrt
+from scipy.ndimage import maximum_filter
 
 
 class Node:
@@ -67,6 +68,12 @@ def search(maze, start, end):
     print("searching ....")
 
     maze = maze.T
+
+    # SEH testing obstacle inflation implementation
+    # inflation_radius = 2  # Grid cells
+    # kernel_size = 2 * inflation_radius + 1
+    # maze = maximum_filter(maze, size=kernel_size)
+
 
     """
         Returns a list of tuples as a path from the given start to the given end in the given maze
@@ -137,7 +144,7 @@ def search(maze, start, end):
                 d) else move the child to yet_to_visit dict
     """
     # TODO PART 4 find maze has got how many rows and columns
-    no_columns, no_rows = maze.shape
+    no_columns, no_rows = maze.shape # SEH originally no_rows, no_columns
 
     # Loop until you find the end
 
@@ -203,8 +210,19 @@ def search(maze, start, end):
                 continue
 
             # TODO PART 4 Create the f, g, and h values
-            child.g = current_node.g + 1 # move cost is 1 since only horizontal and vertical moves are allowed at the moment
-            # Heuristic costs calculated here, this is using eucledian distance
+
+            # weight for obstacle proximity penalty (how heavy the penalty is for being near a wall/obstacle)
+            cost_weight = 5.0
+
+            # get cost map value at the child position
+            cell_cost = maze[child.position[0], child.position[1]]
+
+            # total cost of reaching the next cell along this route, product of the cost_weight and the cell_cost is added to the g cost to penalize paths that are near obstacles more heavily so that clear paths are more preferred
+            child.g = current_node.g + 1 + cost_weight * cell_cost
+
+            # child.g = current_node.g + 1 # move cost is 1 since only horizontal and vertical moves are allowed at the moment
+
+            # heuristic costs calculated here, this is using the method selected in herustic function
             child.h = heuristic(child.position, end)
 
             child.f = child.g + child.h
